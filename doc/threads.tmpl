@@ -109,6 +109,38 @@ to check all elements in the list which will decrease the system speed.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+Added to thread.c:
+    struct list donateList;                 /*  the list of threads which donating their priority to the thread 
+                                                which acquires the lock or resource*/
+
+    static struct list ready_list;          /*  List of processes in THREAD_READY state, that is, processes that
+                                                are ready to run but not actually running. */
+
+Added to struct thread:
+
+    int priority;                           /*  the current real priority of a thread not the donatedPriority. 
+                                                it equals to the donatedPriority when there are no donations but 
+                                                it differs when there are. */
+        
+    int donatedPriority;                    /*  temporary variable to save the actual priority when there are 
+                                                donations. used in the set priority function and is used when 
+                                                donation finishes to ensure that a thread has its original priority. */
+    
+    bool donee;                             /*  set to true if another thread donates its priority to thread 
+                                                otherwise is fale*/
+
+    struct lock *wait_lock;                 /*  set to NULL if there is no donation otherwise points to the lock 
+                                                that the thread is waiting on while donating its priority to a 
+                                                lower priority thread */
+    
+    int nested_depth;                       /*  controls the maximum depth of nested donation (10) */
+
+    struct donate_list;                     /*  list of the threads donating their priorities to the thread */
+
+    struct list_elem donateelem;            /*  to point to the elements in the donate_list  */
+
+    struct list_element readyeleme:         /*  to point to the elements in the readylist  */
+    
 >> B2: Explain the data structure used to track priority donation.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
@@ -145,10 +177,20 @@ which makes it easier to track mulitple donators and nested donation by only der
 >> how your implementation avoids it.  Can you use a lock to avoid
 >> this race?
 
+the critical section in the set priority function is when changing the priority of the current thread so we avoided
+race condition in this part by disabling interrupt before entering this section and enable it after calling the 
+yield function. yes we can use locks such as semaphores to handle this race condition but we used the disable 
+interrupt way as it is simpller and its efficient and enouph as PINTOS works on only one processor.
+
 ---- RATIONALE ----
 
 >> B7: Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
+
+since donate_list of the thread is ordered according to priorities then the schedular can only pick the top of 
+the list without having to iterate through the whole list and that contributes in keeping the schedular cycles 
+as small as possible. if we let the lists unordered this will lead to needing to iterate on the list which will
+take more cycles.
 
 			  ADVANCED SCHEDULER
 			  ==================
