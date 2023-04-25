@@ -4,14 +4,15 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
+#include <threads/nice.h>
+#include <threads/recent_cpu.h>
 /* States in a thread's life cycle. */
 enum thread_status
   {
     THREAD_RUNNING,     /* Running thread. */
     THREAD_READY,       /* Not running but ready to run. */
     THREAD_BLOCKED,     /* Waiting for an event to trigger. */
-    THREAD_DYING        /* About to be destroyed. */
+    THREAD_DYING        /* About to be destroyed. zombie*/
   };
 
 /* Thread identifier type.
@@ -88,8 +89,18 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
-    struct list_elem allelem;           /* List element for all threads list. */
-    int64_t wakeup_ticks;
+    struct list_elem allelem;           /* List element for all threads list.*/
+    struct list_elem readyelem;         /*ready thread*/
+    struct recentCpuFixed rec_cpu;       /*refers to the cpu time that thread takes*/
+    struct niceValueFixed nicee;               /*decreasing it, will increase the thread's priority in advance scheduler.*/
+    int donatedPriority;                /*temporary variable to save the actual priority.*/
+    bool donee;
+    struct list donate_list;
+    struct list_elem donateelem;
+   struct lock *wait_lock;
+   int64_t wakeup_ticks; /* Wakeup ticks used by timer sleep */
+   int64_t ticks_blocked;
+   int nested_depth;                         /*finished*/
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -133,12 +144,14 @@ void thread_foreach (thread_action_func *, void *);
 int thread_get_priority (void);
 void thread_set_priority (int);
 
-//////////////////////////////////////////////////////////////////////////////////////////
-bool minWakeUpComparison(const struct list_elem *,const struct list_elem *, void *);
-
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+bool minWakeUpComparison(const struct list_elem *,const struct list_elem *, void *);
 
+bool readylist_biggerpriority_compare(const struct list_elem *a,const struct list_elem *b,void *aux UNUSED);
+bool donatelist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool readylist_same_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+void updatePriorities(int64_t ticks, int64_t freq, struct thread *t);
 #endif /* threads/thread.h */
