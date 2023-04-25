@@ -726,13 +726,21 @@ allocate_tid (void)
 
   return tid;
 }
-bool
-minWakeUpComparison(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*custom comparison function to the list_insert_ordered function when inserting sleeping threads into the sleeping_list list
+  By sorting the list in ascending order of wakeup times, the timer_interrupt function can efficiently wake up sleeping 
+  threads whose wakeup times have elapsed in order.*/
+bool minWakeUpComparison(const struct list_elem *x, const struct list_elem *y, void *aux)
 {
-  struct thread *thread_pointer_a = list_entry (a, struct thread, elem);
-  struct thread *thread_pointer_b = list_entry (b, struct thread, elem);
-  return thread_pointer_a->wakeup_ticks < thread_pointer_b->wakeup_ticks;
+  //list_entry macro is used to get a pointer to the struct thread corresponding to the elem field of the list element
+  //The elem field is used to link the thread to the sleeping_list list.
+  struct thread *xThread = list_entry (x, struct thread, elem);
+  struct thread *yThread = list_entry (y, struct thread, elem);
+  //return true if wakeup of x is smaller
+  return xThread->wakeup_ticks < yThread->wakeup_ticks;
 }
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
