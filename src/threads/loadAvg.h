@@ -1,0 +1,3 @@
+struct loadAvgFixed{
+    int loadAvg;
+};

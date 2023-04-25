@@ -12,6 +12,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/loadAvg.h"
 // #include <threads/load-avg.h>
 #include "threads/fixed-point.c"
 #include <devices/timer.h>
@@ -64,7 +65,7 @@ static unsigned thread_ticks; /* # of timer ticks since last yield. */
 bool thread_mlfqs;
 
 static void kernel_thread(thread_func *, void *aux);
-
+void updatePriorities(int64_t ticks, int64_t freq, struct thread *t);
 static void idle(void *aux UNUSED);
 static struct thread *running_thread(void);
 static struct thread *next_thread_to_run(void);
@@ -75,6 +76,7 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
+struct loadAvgFixed loadAvg;
 /* Initializes the threading system by transforming the codeeee
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -88,6 +90,7 @@ static tid_t allocate_tid(void);
 
    It is not safe to call thread_current() until this function
    finishes. */
+
 void thread_init(void)
 {
   ASSERT(intr_get_level() == INTR_OFF);
@@ -101,6 +104,12 @@ void thread_init(void)
   init_thread(initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid();
+  if (thread_mlfqs)
+  {
+      initial_thread->niceValue.niceValue = 0; //// it is an integer
+      initial_thread->recentCpu.recentCpu = 0; /// it is FP
+      loadAvg.loadAvg = 0; /// it is FP
+  }
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -134,10 +143,27 @@ void thread_tick(void)
 #endif
   else
     kernel_ticks++;
-
+  if (thread_mlfqs)
+  {
+      updatePriorities(timer_ticks(), 100, thread_current());
+  }
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return();
+}
+
+bool readylist_greater_comp(const struct list_elem *a,
+                            const struct list_elem *b, void *aux UNUSED)
+{
+    const int a_member = (list_entry(a, struct thread, readyelem)->priority);
+    const int b_member = (list_entry(b, struct thread, readyelem)->priority);
+    return a_member > b_member;
+}
+bool readylist_same_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
+{
+    const int a_member = (list_entry(a, struct thread, readyelem)->priority);
+    const int b_member = (list_entry(b, struct thread, readyelem)->priority);
+    return a_member > b_member;
 }
 
 /* Prints thread statistics. */
@@ -249,8 +275,18 @@ void thread_unblock(struct thread *t)
 
   old_level = intr_disable();
   ASSERT(t->status == THREAD_BLOCKED);
-  list_push_back(&ready_list, &t->elem);
+  
+  if (thread_mlfqs)
+        list_insert_ordered(&ready_list, &t->readyelem, &readylist_same_greater_comp, NULL);
+    else
+        list_insert_ordered(&ready_list, &t->readyelem, &readylist_greater_comp, NULL);
+  // list_push_back(&ready_list, &t->elem);
+  // t->status = THREAD_READY;
+  // intr_set_level(old_level);
+  struct list_elem *e;
+
   t->status = THREAD_READY;
+
   intr_set_level(old_level);
 }
 
@@ -316,8 +352,12 @@ void thread_yield(void)
   ASSERT(!intr_context());
 
   old_level = intr_disable();
-  if (cur != idle_thread)
-    list_push_back(&ready_list, &cur->elem);
+  if (cur != idle_thread) {
+    if (thread_mlfqs)
+      list_insert_ordered(&ready_list, &cur->readyelem, &readylist_same_greater_comp, NULL);
+    else
+      list_insert_ordered(&ready_list, &cur->readyelem, &readylist_greater_comp, NULL);
+  }
   cur->status = THREAD_READY;
   schedule();
   intr_set_level(old_level);
@@ -361,13 +401,12 @@ void thread_set_nice(int nice UNUSED)
   int recCpu = ((thread_current()->recentCpu.recentCpu) / 4);
   int niceValueFP = makeFP_thenMultiply(thread_current()->niceValue.niceValue, 2);
   thread_current()->priority = priMaxFP - recCpu - niceValueFP;
-  thread_current()->priority = convert_to_int(thread_current()->priority);
+  thread_current()->priority = convertTOInt(thread_current()->priority);
 
-  if (thread_current()->priority < 0) // may be error
+  if (thread_current()->priority < 0) // !!!!!!!!!!!!! may be error
     thread_current()->priority = PRI_MIN;
   else if (thread_current()->priority > PRI_MAX)
     thread_current()->priority = PRI_MAX;
-
   struct list_elem *e;
   if (!list_empty(&ready_list))
   {
@@ -385,22 +424,19 @@ void thread_set_nice(int nice UNUSED)
 /* Returns the current thread's nice value. */
 int thread_get_nice(void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->niceValue.niceValue;
 }
 
 /* Returns 100 times the system load average. */
 int thread_get_load_avg(void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return convertTOInt(loadAvg.loadAvg * 100);
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int thread_get_recent_cpu(void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return convertTOInt(thread_current()->recentCpu.recentCpu * 100);
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -627,3 +663,50 @@ allocate_tid(void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof(struct thread, stack);
+
+void updatePriorities(int64_t ticks, int64_t freq, struct thread *t)
+{
+    if (t != idle_thread) // update every tick
+        t->recentCpu.recentCpu = makeFirstFP_thenADD(1, t->recentCpu.recentCpu);
+    if (!(ticks % freq)) // to be updated each second
+    {
+        int frac = multiplyTwoFP(makeFP_thenDivide(59, 60), loadAvg.loadAvg);
+        int size = list_size(&ready_list);
+        if (t != idle_thread)
+            size += 1;
+        int readyThreadfrac = makeFP_thenDivide(size, 60);
+
+        loadAvg.loadAvg = frac + readyThreadfrac;
+        for (struct list_elem *iter = list_begin(&all_list); iter != list_end(&all_list); iter = list_next(iter))
+        {
+            struct thread *iter_thread = list_entry(iter, struct thread, allelem);
+            if (iter_thread != idle_thread)
+            {
+                frac = divideTwoFP(makeFirstFP_thenMultiply(2, loadAvg.loadAvg),
+                                          makeFirstFP_thenADD(1, makeFirstFP_thenMultiply(2, loadAvg.loadAvg)));
+                iter_thread->recentCpu.recentCpu = makeFirstFP_thenADD(iter_thread->niceValue.niceValue,
+                                                                     multiplyTwoFP(frac, iter_thread->recentCpu.recentCpu));
+                iter_thread->priority = makeFirstFP_thenADD(makeFirstFP_thenMultiply(-2, iter_thread->niceValue.niceValue), makeFirstFP_thenADD(PRI_MAX, makeSecondFP_thenDivide(iter_thread->recentCpu.recentCpu, -4)));
+                iter_thread->priority = convertTOInt(iter_thread->priority);
+                if (iter_thread->priority < 0)
+                    iter_thread->priority = PRI_MIN;
+                else if (iter_thread->priority > 63)
+                    iter_thread->priority = PRI_MAX;
+            }
+        }
+    }
+    else if (!(ticks % 4) && t != idle_thread)
+    {
+        for (struct list_elem *iter = list_begin(&all_list); iter != list_end(&all_list); iter = list_next(iter))
+        {
+            struct thread *iter_over = list_entry(iter, struct thread, allelem);
+            iter_over->priority = makeFirstFP_thenADD(makeFirstFP_thenMultiply(-2, iter_over->niceValue.niceValue), makeFirstFP_thenADD(PRI_MAX, makeSecondFP_thenDivide(iter_over->recentCpu.recentCpu, -4)));
+            iter_over->priority = convertTOInt(iter_over->priority);
+            if (iter_over->priority < 0)
+                iter_over->priority = PRI_MIN;
+            else if (iter_over->priority > 63)
+                iter_over->priority = PRI_MAX;
+        }
+    list_sort(&ready_list, &readylist_same_greater_comp, NULL);
+    }
+}

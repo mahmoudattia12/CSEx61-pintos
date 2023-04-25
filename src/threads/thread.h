@@ -4,9 +4,9 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-#include <fixed-point.h>
-#include <niceValueFixed.h>
-#include <recentCpuFixed.h>
+#include <threads/fixed-point.h>
+#include <threads/niceValueFixed.h>
+#include <threads/recentCpuFixed.h>
 /* States in a thread's life cycle. */
 enum thread_status
 {
@@ -91,10 +91,10 @@ struct thread
    uint8_t *stack;            /* Saved stack pointer. */
    int priority;              /* Priority. */
    struct list_elem allelem;  /* List element for all threads list. */
+   struct list_elem readyelem;
    int64_t wakeup_ticks;
    /* Shared between thread.c and synch.c. */
    struct list_elem elem; /* List element. */
-
    struct recentCpuFixed recentCpu;
 
    struct niceValueFixed niceValue;
@@ -147,6 +147,8 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
+bool readylist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool readylist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 void updatePriorities(int64_t ticks, int64_t freq, struct thread *t);
 
 
