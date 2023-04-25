@@ -1,3 +1,4 @@
+
 #include "threads/thread.h"
 #include <debug.h>
 #include <stddef.h>
@@ -11,6 +12,9 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+// #include <threads/load-avg.h>
+#include "threads/fixed-point.c"
+#include <devices/timer.h>
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -176,7 +180,17 @@ tid_t thread_create(const char *name, int priority,
 
   /* Initialize thread. */
   init_thread(t, name, priority);
+
+  // t->effectivePriority = priority;
+
   tid = t->tid = allocate_tid();
+
+  if (thread_mlfqs)
+  {
+    // the niceValue and the recentCpu of the parent are given to the child as they are
+    t->niceValue.niceValue = thread_current()->niceValue.niceValue;
+    t->recentCpu.recentCpu = thread_current()->recentCpu.recentCpu;
+  }
 
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame(t, sizeof *kf);
@@ -195,6 +209,11 @@ tid_t thread_create(const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock(t);
+
+  // if (priority > thread_current()->priority)
+  // {
+  //   thread_yield();
+  // }
 
   return tid;
 }
@@ -335,6 +354,31 @@ int thread_get_priority(void)
 /* Sets the current thread's nice value to NICE. */
 void thread_set_nice(int nice UNUSED)
 {
+  enum intr_level old_level = intr_disable(); // get old state of the interrupt
+
+  thread_current()->niceValue.niceValue = nice;
+  int priMaxFP = convertToFP(PRI_MAX);
+  int recCpu = ((thread_current()->recentCpu.recentCpu) / 4);
+  int niceValueFP = makeFP_thenMultiply(thread_current()->niceValue.niceValue, 2);
+  thread_current()->priority = priMaxFP - recCpu - niceValueFP;
+  thread_current()->priority = convert_to_int(thread_current()->priority);
+
+  if (thread_current()->priority < 0) // may be error
+    thread_current()->priority = PRI_MIN;
+  else if (thread_current()->priority > PRI_MAX)
+    thread_current()->priority = PRI_MAX;
+
+  struct list_elem *e;
+  if (!list_empty(&ready_list))
+  {
+    e = list_begin(&ready_list);
+    struct thread *max_priority_thread = list_entry(e, struct thread, readyelem);
+    if (max_priority_thread->priority >= thread_current()->priority)
+    {
+      thread_yield();
+    }
+  }
+  intr_set_level(old_level);
   /* Not yet implemented. */
 }
 

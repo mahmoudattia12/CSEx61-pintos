@@ -1,5 +1,6 @@
 #include <threads/fixed-point.h>
 #include <stdint.h>
+
 // x and y are fixed-point numbers, n is an integer.
 // fixed-point numbers are in signed p.q format where p + q = 31, and f is 1 << q
 int convert_to_fixed_point(int n);
@@ -12,6 +13,8 @@ int Multiply_2_FP(int x, int y);
 int Multiply_FP_by_int(int x, int n);
 int Divide_FPx_by_FPy(int x, int y);
 int Divide_x_by_n(int x, int n);
+int makeFP_thenDivide(int x, int y);
+
 /*int makeFP_thenAdd(int x, int y);
 int makeFirstFP_thenADD(int x, int y);
 int makeFP_thenMultiply(int x, int y);
@@ -52,6 +55,11 @@ int Multiply_2_FP(int x, int y)
 {
     (((int64_t)x) * y) / (1 << 14);
 }
+
+int makeFP_thenMultiply(int x, int y){
+    return (x * y) * (1 << 14);
+}
+
 int Multiply_FP_by_int(int x, int n)
 {
     return (x * n);
@@ -64,6 +72,11 @@ int Divide_x_by_n(int x, int n)
 {
     return (x / n);
 }
+
+int makeFP_thenDivide(int x, int y){//divide 2 integers
+    return (x * (1 << 14) / y) ;
+}
+
 /*
 int makeFP_thenAdd(int n1, int n2){//Add_2_integers
     return (x+y)*(1<<14);

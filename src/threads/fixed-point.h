@@ -8,6 +8,9 @@ int Multiply_2_FP(int x,int y);
 int Multiply_FP_by_int(int x,int n);
 int Divide_FPx_by_FPy(int x,int y);
 int Divide_x_by_n(int x, int n); 
+int makeFirstFP_thenDivide(int x, int y);
+int makeFP_thenDivide(int x, int y);
+
 /*int makeFP_thenAdd(int x, int y);
 int makeFirstFP_thenADD(int x, int y);
 int makeFP_thenMultiply(int x, int y);
