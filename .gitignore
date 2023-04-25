@@ -1,0 +1,14 @@
+*
+
+
+!src/
+!src/devices/
+!src/threads/
+!src/threads/synch.c
+!src/threads/synch.h
+!src/threads/thread.c
+!src/threads/thread.h
+!src/threads/fixed-point.c
+!src/threads/fixed-point.h
+!src/devices/timer.c
+!src/devices/timer.h
