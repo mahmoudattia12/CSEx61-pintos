@@ -122,7 +122,7 @@ Added to struct thread:
                                                 it equals to the donatedPriority when there are no donations but 
                                                 it differs when there are. */
         
-    int donatedPriority;                    /*  temporary variable to save the actual priority when there are 
+    int donatedPriority;                    /*  temporary variable to save the original priority when there are 
                                                 donations. used in the set priority function and is used when 
                                                 donation finishes to ensure that a thread has its original priority. */
     
