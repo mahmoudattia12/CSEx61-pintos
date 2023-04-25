@@ -93,6 +93,13 @@ struct thread
    struct list_elem allelem;  /* List element for all threads list. */
    struct list_elem readyelem;
    int64_t wakeup_ticks;
+   int donatedPriority;                /*temporary variable to save the actual priority.*/
+   bool donee;
+   struct list donate_list;
+   struct list_elem donateelem;
+   struct lock *wait_lock;
+   int64_t ticks_blocked;
+   int nested_depth;            /*finished*/
    /* Shared between thread.c and synch.c. */
    struct list_elem elem; /* List element. */
    struct recentCpuFixed recentCpu;
@@ -148,8 +155,8 @@ int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
 bool readylist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-bool readylist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool readylist_same_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
+bool donatelist_greater_comp(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 void updatePriorities(int64_t ticks, int64_t freq, struct thread *t);
-
 
 #endif /* threads/thread.h */
