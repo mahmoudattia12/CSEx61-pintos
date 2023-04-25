@@ -1,0 +1,6 @@
+
+
+struct recentCpuFixed
+{
+    int recentCpu; 
+};

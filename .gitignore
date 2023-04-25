@@ -12,3 +12,7 @@
 !src/threads/fixed-point.h
 !src/devices/timer.c
 !src/devices/timer.h
+!src/threads/recentCpuFixed.h
+!src/threads/recentCpuFixed.c
+!src/threads/niceValueFixed.h
+!src/threads/niceValueFixed.c
