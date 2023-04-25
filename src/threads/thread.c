@@ -508,7 +508,6 @@ void thread_set_nice(int nice UNUSED)
     }
   }
   intr_set_level(old_level);
-  /* Not yet implemented. */
 }
 
 /* Returns the current thread's nice value. */

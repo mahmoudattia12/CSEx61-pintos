@@ -1,5 +1,3 @@
-
-
 struct recentCpuFixed
 {
     int recentCpu; 

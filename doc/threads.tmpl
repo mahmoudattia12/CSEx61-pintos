@@ -144,6 +144,24 @@ to check all elements in the list which will decrease the system speed.
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+struct recentCpuFixed
+        Includes an integer field that is dealt as fixed point
+        Represents the time taken by each running or waiting thread
+        It's used in thread struct
+        Declaration: struct recentCpuFixed recentCpu;
+
+struct niceValueFixed
+        Includes an integer field
+        Describes how easy the thread give up the CPU
+        It's used in thread struct
+        Declaration: struct niceValueFixed niceValue;
+
+struct loadAvgFixed
+        Includes an integer field that is dealt as fixed point
+        Estimates the average number of threads ready to run over the past minute
+        It's a glabal variable in thread.c
+        Declaration: struct loadAvgFixed loadAvg;
+
 ---- ALGORITHMS ----
 
 >> C2: Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
@@ -154,23 +172,35 @@ to check all elements in the list which will decrease the system speed.
 timer  recent_cpu    priority   thread
 ticks   A   B   C   A   B   C   to run
 -----  --  --  --  --  --  --   ------
- 0
- 4
- 8
-12
-16
-20
-24
-28
-32
-36
+ 0      0   0   0  63  61  59      A
+ 4      4   0   0  62  61  59      A
+ 8      8   0   0  61  61  59      B
+12      8   4   0  61  60  59      A
+16      12  4   0  60  60  59      B
+20      12  8   0  60  59  59      A
+24      16  8   0  59  59  59      C
+28      16  8   4  59  59  58      B
+32      16  12  4  59  58  58      A 
+36      20  12  4  58  58  58      C
 
 >> C3: Did any ambiguities in the scheduler specification make values
 >> in the table uncertain?  If so, what rule did you use to resolve
 >> them?  Does this match the behavior of your scheduler?
 
+- Yes, there was an ambiguity concerning which thread to run when
+- there are more than one thread having the maximum priority.
+- This is solved by choosing the last thread with maximum priority to run
+- and place the previous running thread in its appropriate place in the
+- descendingly ordered ready_list.
+- Yes, this matches the behavior of our scheduler due to ordering
+- and the the selected thread to run still has the maximum priority.
+
 >> C4: How is the way you divided the cost of scheduling between code
 >> inside and outside interrupt context likely to affect performance?
+
+- By disabling the interrupts before changing the priority of the current running thread
+- as it represents a critical section, and then enabling it after performing "yield"
+- when there exists a thread with higher priority in the ready_list.
 
 ---- RATIONALE ----
 
@@ -179,12 +209,27 @@ ticks   A   B   C   A   B   C   to run
 >> time to work on this part of the project, how might you choose to
 >> refine or improve your design?
 
+Advantages: - as the ready_list is always sorted descindingly, in upadtePriorities function
+              choosing the next thread to run is fast
+	        - calculations are quite fast
+Disadvantages: - it takes a long time to sort the ready_list after updating priorities
+		       - updating the priorities itself requires looping through all threads, and
+                 this is repeated every tick, second, and time slice
+
+- If we had extra time:
+        we would have thought of another method such as deriving estimates for the priorities after
+        a certain period of time or updating the priorities, recent_cpu and load Averages in batches
+
+
 >> C6: The assignment explains arithmetic for fixed-point math in
 >> detail, but it leaves it open to you to implement it.  Why did you
 >> decide to implement it the way you did?  If you created an
 >> abstraction layer for fixed-point math, that is, an abstract data
 >> type and/or a set of functions or macros to manipulate fixed-point
 >> numbers, why did you do so?  If not, why not?
+
+- Our implementation is fast and easy using the binary shift operator
+- This implementation is reusable and provides encapsulation
 
 			   SURVEY QUESTIONS
 			   ================

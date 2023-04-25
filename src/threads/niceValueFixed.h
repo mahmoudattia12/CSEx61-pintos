@@ -1,5 +1,3 @@
-
-
 struct niceValueFixed{
     int niceValue;
 };
