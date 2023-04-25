@@ -366,14 +366,12 @@ void cond_wait(struct condition *cond, struct lock *lock)
 	enum intr_level old_level;
 	struct semaphore_elem waiter;
 	old_level = intr_disable();
-	// printf("Inside wait\n");
 
 	ASSERT(cond != NULL);
 	ASSERT(lock != NULL);
 	ASSERT(!intr_context());
 	ASSERT(lock_held_by_current_thread(lock));
 
-	// list_sort(&cond->waiters, &waitinglist_greater_comp, NULL);
 	list_insert_ordered(&cond->waiters, &thread_current()->elem, &waitinglist_greater_comp, NULL);
 	lock_release(lock);
 	thread_block();
@@ -393,7 +391,6 @@ void cond_signal(struct condition *cond, struct lock *lock UNUSED)
 {
 	enum intr_level old_level;
 	old_level = intr_disable();
-	// printf("Inside signal\n");
 	ASSERT(cond != NULL);
 	ASSERT(lock != NULL);
 	ASSERT(!intr_context());
