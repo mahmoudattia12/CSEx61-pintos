@@ -110,7 +110,7 @@ timer_sleep (int64_t ticks)
   curr_thread->wakeup_ticks = timer_ticks() + ticks;
 
   //use the list_insert_ordered function to add the current thread to the 
-  //sleeping_list(sorted by the minimum wakeup time)
+  //sleepingList(sorted by the minimum wakeup time)
   //minWakeUpComparison is custom comparison for the list_insert_ordered function
   list_insert_ordered(&sleepingList, &curr_thread->elem, minWakeUpComparison, NULL);
   thread_block();
