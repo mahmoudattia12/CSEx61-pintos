@@ -113,6 +113,21 @@ to check all elements in the list which will decrease the system speed.
 >> Use ASCII art to diagram a nested donation.  (Alternately, submit a
 >> .png file.)
 
+we'll try to explain it in a form of a story, suppose that we have a lock say L, and two threads are there t1, and t2 
+of priority p1 and p2 respectively and p2 > p1, now t1 is aquiring L and it's granted now consider this:
+thread t2 wants to aquire the lock -->	- Thread t2 wait_lock points to lock L 
+					- Thread t2 is added to donate_list(list that keeps the largest priority on front) of thread t1  
+					- In case of nested donations we loop through the chain changing the lock holders priorities to p2 if it's larger
+					- sets the boolean donee of p1 to true to indicate that its actual priority is not the same as the effective_priority
+
+Thread t1 wants releases the lock L --> - The thread t2-since it's supposed to be the largest p in the donate list-is poped out of the donate_list
+					- after popping t2 we assign t1's effective_priority to the next highest in its donate_list if there's any
+					  and if t1's donate_list is now empty we assign t1.effective_priority = t.priority
+
+so basically, by using a donate_list for each thread and a pointer to a lock. it is ensured that every thread holds its donators,
+which makes it easier to track mulitple donators and nested donation by only dereferencing wait_lock to their holders.
+
+
 ---- ALGORITHMS ----
 
 >> B3: How do you ensure that the highest priority thread waiting for
