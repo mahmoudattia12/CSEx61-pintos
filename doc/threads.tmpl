@@ -164,12 +164,39 @@ which makes it easier to track mulitple donators and nested donation by only der
 
 >> B3: How do you ensure that the highest priority thread waiting for
 >> a lock, semaphore, or condition variable wakes up first?
+Because any thread is put into readylist or blockedlist waiting on lock_acquire, sema_up,  cond_wait , 
+thread_yield and thread_unblock and this list is ordered using list_insert_ordered according to the priority.
+so, Always the front of the list is the thread with biggest priority.
 
 >> B4: Describe the sequence of events when a call to lock_acquire()
 >> causes a priority donation.  How is nested donation handled?
+let we have a lock (L), with current holder (Thread (A)) with priority p1.
+There is a thread (B) with priority p2 -which p2>p1- also wants to acquire this lock.
+sequence:
+-->thread A is the current holder of (L).
+-->thread B wants to acquire the lock (L).
+-->Thread B->wait_pointer is set to (L) and thread (A)->donee is set to true refers to there is donation case.
+-->Then thread (B) is inserted to donate_list of thread (A).
+-->A temporary_lock pointer is initialized to lock (L).
+-->Then we iterate through the threads waiting for lock (L) by derefrence wait_pointer until it becomes (NULL).
+-->In each thread we encounter we change its priority to (P2) if its (priority<P2) keeping the real priority 
+saved in donated priority field for each changed thread.
+--> Then donate_list of the lock(L) holder thread is ordered according to priority, first thread in the list 
+will be the thread with biggest priority.
+-->temporary_lock pointer is set to the wait_pointer of temporary_lock holder thread.
+--> Max nested level is 10.
+nested level donation is handled as follows: we iterate on each thread in the chain and derefrence the threads 
+in waiting on lock (Li) starting from the current holder of L0 thread.then go to the current holder of L1 thread,...etc.
+giving the maximum priority of these threads to the current holder L0 thread.
 
 >> B5: Describe the sequence of events when lock_release() is called
 >> on a lock that a higher-priority thread is waiting for.
+Say we have lock L,  thread A having original priority P1 and currently acquiring Lock L, and thread B of priority P2 where P2 > P1
+
+--> we see if thread A donate_list is empty, then its priority = the donated priority and set A->donee to false 
+indicating no thread donation exist.
+-->otherwise we pop the thread B(which will be the thread with highest priority) from A's donate_list, 
+change thread A->donatedpriority to the biggest priority in thread A. donate_list.
 
 ---- SYNCHRONIZATION ----
 
