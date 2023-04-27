@@ -1,21 +1,4 @@
-// /*int makeFP_thenAdd(int x, int y);
-// int makeFirstFP_thenADD(int x, int y);
-// int makeFP_thenMultiply(int x, int y);
-// int makeFirstFP_thenMultiply(int x, int y);
-// int makeFP_thenDivide(int x, int y);
-// int makeFirstFP_thenDivide(int x, int y);
-// int makeSecondFP_thenDivide(int x, int y);
-
-// #ifndef PINTOSPROJECT_FIXED_POINT_H
-// #define PINTOSPROJECT_FIXED_POINT_H
-
-// #endif //PINTOSPROJECT_FIXED_POINT_H
-// */
-
-//
-// Created by louay on 5/12/22.
-//
-//////operations on fixed point values of 17 bits integer part and 14 bits decimal part...
+// operations on fixed point values of 17 bits integer part and 14 bits decimal part...
 int makeFP_thenAdd(int x, int y);
 int makeFirstFP_thenADD(int x, int y);
 int addTwoFP(int x, int y);
