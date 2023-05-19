@@ -590,6 +590,15 @@ init_thread(struct thread *t, const char *name, int priority)
   list_init(&t->donate_list);
   t->wait_lock = NULL;
   t->nested_depth = 10;
+
+  ///////////////////////////////////////////
+  //initilization
+  list_init(t->child_list)
+  sema_init(t->waitChildExecution,0);
+  sema_init(t->waitChildLoading,0);
+
+  t->parent = running_thread();
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
