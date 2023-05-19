@@ -103,8 +103,16 @@ struct thread
    /* Shared between thread.c and synch.c. */
    struct list_elem elem; /* List element. */
    struct recentCpuFixed recentCpu;
-
    struct niceValueFixed niceValue;
+
+   struct thread* parent;
+   struct list child_list;
+   struct list_elem child_elem;
+   int childState;
+   bool createdSucc;
+   struct semaphore waitChildExecution;
+   struct semaphore waitChildLoading;
+   struct file* execFile;
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */
