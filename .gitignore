@@ -4,6 +4,7 @@
 !src/
 !src/devices/
 !src/threads/
+!src/userprog/
 !src/threads/synch.c
 !src/threads/synch.h
 !src/threads/thread.c
@@ -18,4 +19,4 @@
 !src/userprog/exception.c
 !src/userprog/process.c
 !src/userprog/syscall.c
-!userprog/syscall.h
+!src/userprog/syscall.h
