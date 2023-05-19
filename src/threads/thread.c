@@ -209,55 +209,7 @@ void thread_print_stats(void)
 tid_t thread_create(const char *name, int priority,
                     thread_func *function, void *aux)
 {
-  // struct thread *t;
-  // struct kernel_thread_frame *kf;
-  // struct switch_entry_frame *ef;
-  // struct switch_threads_frame *sf;
-  // tid_t tid;
-
-  // ASSERT(function != NULL);
-
-  // /* Allocate thread. */
-  // t = palloc_get_page(PAL_ZERO);
-  // if (t == NULL)
-  //   return TID_ERROR;
-
-  // /* Initialize thread. */
-  // init_thread(t, name, priority);
-  // t->donatedPriority = priority;
-
-
-  // if (thread_mlfqs)
-  // {
-  //   // the niceValue and the recentCpu of the parent are given to the child as they are
-  //   t->niceValue.niceValue = thread_current()->niceValue.niceValue;
-  //   t->recentCpu.recentCpu = thread_current()->recentCpu.recentCpu;
-  // }
-  // tid = t->tid = allocate_tid();
-
-  // /* Stack frame for kernel_thread(). */
-  // kf = alloc_frame(t, sizeof *kf);
-  // kf->eip = NULL;
-  // kf->function = function;
-  // kf->aux = aux;
-
-  // /* Stack frame for switch_entry(). */
-  // ef = alloc_frame(t, sizeof *ef);
-  // ef->eip = (void (*)(void))kernel_thread;
-
-  // /* Stack frame for switch_threads(). */
-  // sf = alloc_frame(t, sizeof *sf);
-  // sf->eip = switch_entry;
-  // sf->ebp = 0;
-
-  // struct lock *lock = aux;
-  // /* Add to run queue. */
-  // thread_unblock(t);
-  // if (priority > thread_current()->priority)
-  // {
-  //   thread_yield();
-  // }
-  // return tid;
+  
   struct thread *t;
     struct kernel_thread_frame *kf;
     struct switch_entry_frame *ef;
