@@ -28,21 +28,45 @@ static bool load (const char *cmdline, void (**eip) (void), void **esp);
 tid_t
 process_execute (const char *file_name) 
 {
-  ///////////////////////////////////////////////
   char *fn_copy;
   tid_t tid;
+  char* executableName;   //pointer to the extracted executable name from file_name
+  char* next;             //used in strtok_r function
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
+  executableName = palloc_get_page (0);
+
+  if(fn_copy == NULL || executableName || NULL){
+    palloc_free_page(fn_copy);
+    palloc_free_page(executableName);
     return TID_ERROR;
+  }
+
   strlcpy (fn_copy, file_name, PGSIZE);
+  strlcpy (executableName, file_name, PGSIZE);
+  //used to tokenize the string based on whitespace and the first token (executable name) is stored in name
+  executableName = strtok_r(executableName, " ", &next);    
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+  tid = thread_create (executableName, PRI_DEFAULT, start_process, fn_copy);
+  if (tid == TID_ERROR){
+      palloc_free_page (fn_copy); 
+      palloc_free_page (executableName);
+      return TID_ERROR; 
+  }
+
+  //wait for the newly created thread to complete its initialization by calling sema_down
+  sema_down(&thread_current->waitChildLoading);  
+
+  
+  if(name) palloc_free_page (executableName);  //name is not NULL
+
+
+  if(!thread_current->createdSucc) return TID_ERROR;
+
+    
   return tid;
 }
 
