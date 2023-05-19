@@ -15,3 +15,7 @@
 !src/threads/recentCpuFixed.h
 !src/threads/niceValueFixed.h
 !src/threads/loadAvg.h
+!src/userprog/exception.c
+!src/userprog/process.c
+!src/userprog/syscall.c
+!userprog/syscall.h
