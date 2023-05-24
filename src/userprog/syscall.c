@@ -13,16 +13,6 @@
 #include <stdlib.h>
 #include "syscall.h"
 #include "threads/synch.h"
-#include "userprog/process.h"
-#include "threads/vaddr.h"
-#include "filesys/filesys.h"
-#include "filesys/file.h"
-#include "devices/shutdown.h"
-#include "devices/input.h"
-#include <string.h>
-#include <stdlib.h>
-#include "syscall.h"
-#include "threads/synch.h"
 
 // the only global lock, that we use to avoid race condition of files
 static struct lock lock;
@@ -43,8 +33,6 @@ bool create(char *file, unsigned initial_size);
 bool remove(char *file);
 tid_t exec(char *cmd_line);
 int wait(int pid);
-bool create(char *file, unsigned initial_size);
-bool remove(char *file);
 int open(char *file_name);
 int fileSize(int fd);
 int write(int fd, void *buffer, int size);
@@ -100,7 +88,7 @@ syscall_handler(struct intr_frame *f UNUSED)
     if (cmd_line == NULL)
       exit(-1);
     lock_acquire(&lock);
-    f->eax = sys_exec(cmd_line);
+    f->eax = exec(cmd_line);
     lock_release(&lock);
     break;
 
@@ -229,10 +217,7 @@ int wait(int pid)
 }
 
 
-//creating a file that's called (char *file) with (unsigned initial_size) as initial size
-//but note that we must have the creation operation in a lock and finaly 
-//return boolean indicating whether the creation process is a success or not
-bool create(char *file, unsigned initial_size){
+
 // creating a file that's called (char *file) with (unsigned initial_size) as initial size
 // but note that we must have the creation operation in a lock and finaly
 // return boolean indicating whether the creation process is a success or not
@@ -249,8 +234,7 @@ bool create(char *file, unsigned initial_size)
   return ret;
 }
 
-//remove the file that's named (char *file) and return if success or not
-bool remove(char *file){
+
 // remove the file that's named (char *file) and return if success or not
 bool remove(char *file)
 {
@@ -356,6 +340,8 @@ unsigned tell(int fd)
   lock_release(&lock);
   return pos;
 }
+
+
 void close(int fd)
 {
   struct opened_file *f = get_file_by_fd(fd);
@@ -371,6 +357,7 @@ void close(int fd)
   list_remove(&f->elem);
   palloc_free_page(f);
 }
+
 
 /// Writes (length) bytes from buffer to the open file fd.
 int write(int fd, void *buffer, int length)

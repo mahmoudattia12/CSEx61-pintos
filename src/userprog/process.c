@@ -104,7 +104,7 @@ start_process(void *file_name_)
   if (!success)
   {
     sema_up(&parent->waitChildLoading);
-    sys_exit(-1);
+    exit(-1);
   }
 
   /* Start the user process by simulating a return from an
