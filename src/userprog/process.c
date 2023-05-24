@@ -261,13 +261,26 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
   process_activate ();
 ///////////////////////////////////////////////////////////
+
+  char *executable, *next;
+  executable = palloc_get_page(0);
+  if(executable == NULL)
+    goto done;
+  
+  strlcpy(executable, file_name, PGSIZE);
+  executable = strtok_r(executable, " ", &next);
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open (executable);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
       goto done; 
     }
+  
+  //file is not NULL
+
+  t->execFile = file;
+  file_deny_write(file);
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -345,16 +358,59 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
 
+  char *token = file_name, *nP;
+  int argc = 0;
+  int* argv = calloc(20, sizeof(int)); 
+
+ for(token = strtok_r(file_name , " " ,  &nP) ; token != NULL ; token = strtok_r(NULL , " " , &nP)){
+   *esp -= (strlen(token) + 1 );            //take null char into consideration
+   memcpy(*esp , token , strlen(token)+ 1 ); 
+   argv[argc++] = *esp ;   
+   ASSERT(argc < 20) ;
+ }
+
+ //align the stack pointer by adding null bytes ('\0') until it becomes a multiple of 4
+  while((int) *esp % 4 != 0){
+    *esp -= 1; 
+    char c = '\0';
+    memcpy(*esp,&c,1);
+  }
+
+  int x = 0 ; 
+  *esp -= sizeof(int) ;
+  memcpy(*esp , &x , sizeof(int)) ;  
+
+  //push the addresses of each argument onto the stack in reverse order (right to left) 
+  for(int i = argc - 1; i >= 0; i--)
+  {
+    *esp -= sizeof(int);
+     memcpy(*esp, &argv[i], sizeof(int)); 
+  }
+  // push pointer to the pointer of the first argument in the stack (argv[0])
+  *esp -= sizeof(int);
+  int firstArg = *esp + sizeof(int) ;  
+  memcpy(*esp , &firstArg , sizeof(int)) ; 
+  //then push argc
+   *esp -= sizeof(int) ; 
+   memcpy(*esp , &argc , sizeof(int));
+  // push fake return zero as explained
+  *esp = *esp - sizeof(int ) ; 
+  memcpy(*esp , &x , sizeof(int )) ; 
+
+  free(argv);
+  palloc_free_page(token);
+
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
+  //if reached here so success should be true
   success = true;
 
  done:
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
   return success;
 }
+
 
 /* load() helpers. */
 
