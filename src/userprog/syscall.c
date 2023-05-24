@@ -3,6 +3,16 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "userprog/process.h"
+#include "threads/vaddr.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
+#include "devices/shutdown.h"
+#include "devices/input.h"
+#include <string.h>
+#include <stdlib.h>
+#include "syscall.h"
+#include "threads/synch.h"
 
 //the only global lock, that we use to provide mutual execlusion over the files
 static struct lock lock;
@@ -21,6 +31,8 @@ static void syscall_handler(struct intr_frame *);
 void validate_void_ptr(const void *ptr);
 void halt(void);
 void exit(int status);
+bool create(char *file, unsigned initial_size);
+bool remove(char *file);
 
 void syscall_init(void)
 {
@@ -175,7 +187,7 @@ void exit(int status)
   struct thread *cur = thread_current()->parent;
   printf("%s: exit(%d)\n", thread_current()->name, status);
   if (cur)
-    cur->childStatus = status;
+    cur->childState = status;
   thread_exit();
 }
 
@@ -200,18 +212,16 @@ int wait(int pid)
 //creating a file that's called (char *file) with (unsigned initial_size) as initial size
 //but note that we must have the creation operation in a lock and finaly 
 //return boolean indicating whether the creation process is a success or not
-bool create(char *file, unsigned initial_size)
-{
+bool create(char *file, unsigned initial_size){
   bool ret;
 	lock_acquire(&lock);
 	ret = filesys_create(file, initial_size);
 	lock_release(&lock);
-	return ret;
+	return true;
 }
 
 //remove the file that's named (char *file) and return if success or not
-bool remove(char *file)
-{
+bool remove(char *file){
   bool ret;
 	lock_acquire(&lock);
 	ret = filesys_remove(file);
