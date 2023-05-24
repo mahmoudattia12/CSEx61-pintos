@@ -7,6 +7,9 @@
 #include <threads/fixed-point.h>
 #include <threads/niceValueFixed.h>
 #include <threads/recentCpuFixed.h>
+
+#include "threads/synch.h"
+#include "filesys/file.h"
 /* States in a thread's life cycle. */
 enum thread_status
 {
@@ -107,12 +110,15 @@ struct thread
 
    struct thread* parent;
    struct list child_list;
+   struct list file_list;
    struct list_elem child_elem;
+   struct file* execFile;
    int childState;
+   int fileDirectory;
    bool createdSucc;
    struct semaphore waitChildExecution;
    struct semaphore waitChildLoading;
-   struct file* execFile;
+   
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */

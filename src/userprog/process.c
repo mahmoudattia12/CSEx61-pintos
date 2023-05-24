@@ -58,13 +58,13 @@ process_execute (const char *file_name)
   }
 
   //wait for the newly created thread to complete its initialization by calling sema_down
-  sema_down(&thread_current->waitChildLoading);  
+  sema_down(&thread_current()->waitChildLoading);  
 
   
-  if(name) palloc_free_page (executableName);  //name is not NULL
+  if(executableName) palloc_free_page (executableName);  //name is not NULL
 
 
-  if(!thread_current->createdSucc) return TID_ERROR;
+  if(!thread_current()->createdSucc) return TID_ERROR;
 
     
   return tid;
@@ -114,7 +114,7 @@ start_process (void *file_name_)
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
-//
+
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
    exception), returns -1.  If TID is invalid or if it was not a
@@ -125,12 +125,40 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 ///////////////////////////////////////////
-int
-process_wait (tid_t child_tid UNUSED) 
-{
-   while(1){}
+int process_wait(tid_t child_tid){
+
+  struct thread* curr = thread_current();  // Obtain a pointer to the current thread
+  struct thread* child = NULL;          // Initialize a pointer to the child process as NULL
+
+  // Iterate over the list of child processes of the current thread
+  for (struct list_elem* listElement = list_begin(&curr->child_list); listElement != list_end(&curr->child_list); listElement = list_next(listElement)){
+    // Get a pointer to the child process from the list element if exist
+    struct thread* child_process = list_entry(listElement, struct thread, child_elem);
+    // Check if the tid (thread ID) of the child process matches the child_tid parameter
+    if (child_process->tid == child_tid){
+      // If a matching child process is found, assign its pointer to the child variable
+      child = child_process;
+      break;
+    }
+  }
+  // Check if a matching child process was found
+  if (child != NULL){
+    // Remove the child process from the parent's list of child processes
+    list_remove(&child->child_elem);
+
+    // Signal that the child process has exited by incrementing the sync semaphore
+    sema_up(&child->waitChildLoading);  //------------------------------------------------>
+
+    // Block the parent process until the child process completes by decrementing the waitChild semaphore
+    sema_down(&curr->waitChildExecution);
+
+    // Return the exit status of the child process
+    return curr->childState;
+  }
+  // If no matching child process was found, return -1
   return -1;
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 /* Free the current process's resources. */
 void
@@ -156,6 +184,8 @@ process_exit (void)
       pagedir_destroy (pd);
     }
 }
+
+
 
 /* Sets up the CPU for running user code in the current
    thread.
@@ -411,7 +441,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* We arrive here whether the load is successful or not. */
   return success;
 }
-
 
 /* load() helpers. */
 
