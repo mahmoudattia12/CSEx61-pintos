@@ -108,17 +108,18 @@ struct thread
    struct recentCpuFixed recentCpu;
    struct niceValueFixed niceValue;
 
+//----------------------------------------
    struct thread* parent;
    struct list child_list;
    struct list file_list;
    struct list_elem child_elem;
    struct file* execFile;
    int childState;
-   int fileDirectory;
+   int fdLast;
    bool createdSucc;
    struct semaphore waitChildExecution;
    struct semaphore waitChildLoading;
-   
+//------------------------------------------------  
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */

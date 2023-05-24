@@ -330,8 +330,7 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   executable = strtok_r(executable, " ", &next);
   /* Open executable file. */
   file = filesys_open(executable);
-  if (file == NULL)
-  {
+  if (file == NULL){
     printf("load: %s: open failed\n", file_name);
     goto done;
   }
