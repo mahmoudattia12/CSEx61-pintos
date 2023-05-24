@@ -51,6 +51,7 @@ tid_t process_execute(const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create(executableName, PRI_DEFAULT, start_process, fn_copy);
+
   if (tid == TID_ERROR)
   {
     palloc_free_page(fn_copy);
@@ -93,9 +94,9 @@ start_process(void *file_name_)
   if (success)
   {
     parent->createdSucc = true;
-    list_push_back(&parent->child_list, &child->child_elem); // ------------------------------------------------->
+    list_push_back(&parent->child_list, &child->child_elem); 
     sema_up(&parent->waitChildLoading);
-    sema_down(&child->waitChildLoading);
+    sema_down(&child->waitChildLoading);    
   }
 
   /* If load failed, quit. */
@@ -186,8 +187,14 @@ void process_exit(void)
   while (!list_empty(&curr->child_list)){
     // get the last child process from the childList and remove it from the list
     struct thread *child = list_entry(list_pop_back(&curr->child_list), struct thread, child_elem);
+    
+    //------------------------------------------------------------------------------------------------------>
+
     child->parent = NULL;   // set the parent of the child process to NULL, indicating no parent process
+    
     sema_up(&child->waitChildLoading);   //signal that the child process has exited by incrementing the semaphore
+
+    //-------------------------------------------------------------------------------------------------->
   }
 
   // allow write access to the executable file and close it, if it exists
@@ -407,8 +414,7 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   int argc = 0;
   int *argv = calloc(20, sizeof(int));
 
-  for (token = strtok_r(file_name, " ", &nP); token != NULL; token = strtok_r(NULL, " ", &nP))
-  {
+  for (token = strtok_r(file_name, " ", &nP); token != NULL; token = strtok_r(NULL, " ", &nP)){
     *esp -= (strlen(token) + 1); // take null char into consideration
     memcpy(*esp, token, strlen(token) + 1);
     argv[argc++] = *esp;
@@ -416,8 +422,7 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   }
 
   // align the stack pointer by adding null bytes ('\0') until it becomes a multiple of 4
-  while ((int)*esp % 4 != 0)
-  {
+  while ((int)*esp % 4 != 0){
     *esp -= 1;
     char c = '\0';
     memcpy(*esp, &c, 1);
@@ -440,6 +445,7 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   // then push argc
   *esp -= sizeof(int);
   memcpy(*esp, &argc, sizeof(int));
+
   // push fake return zero as explained
   *esp = *esp - sizeof(int);
   memcpy(*esp, &x, sizeof(int));

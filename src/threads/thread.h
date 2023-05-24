@@ -130,7 +130,7 @@ struct thread
 };
 
 struct opened_file{
-   int fileDir;
+   int fileDescriptor;
    struct file* ptr;
    struct list_elem elem;
 };
