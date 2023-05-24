@@ -129,6 +129,12 @@ struct thread
    unsigned magic; /* Detects stack overflow. */
 };
 
+struct opened_file{
+   int fileDir;
+   struct file* ptr;
+   struct list_elem elem;
+};
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
