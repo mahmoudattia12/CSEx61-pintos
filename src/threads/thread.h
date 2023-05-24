@@ -115,7 +115,7 @@ struct thread
    struct list_elem child_elem;
    struct file* execFile;
    int childState;
-   int fdLast;
+   int fileDirectory;
    bool createdSucc;
    struct semaphore waitChildExecution;
    struct semaphore waitChildLoading;
