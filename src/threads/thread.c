@@ -254,7 +254,7 @@ tid_t thread_create(const char *name, int priority,
     thread_unblock(t);
 
     /*send the current thread to ready queue if the new thread has higher priority and reschedule*/
-    if (priority > thread_current()->priority)
+    if (priority > thread_current()->priority && !intr_context)
     {
         thread_yield();
     }
@@ -419,7 +419,7 @@ void thread_set_priority(int new_priority)
 
     e = list_front(&ready_list);//thread with maximum priority which is the first one.
     struct thread *max_priority_thread = list_entry(e, struct thread, readyelem);//create the thread with max priority.
-    if (max_priority_thread->priority > new_priority)//if the priority of thread with maximum priority greater than new_priority then call yield to remove the running thread and put it in ready list.
+    if (max_priority_thread->priority > new_priority && !intr_context)//if the priority of thread with maximum priority greater than new_priority then call yield to remove the running thread and put it in ready list.
     {
         thread_yield();
     }
@@ -454,7 +454,7 @@ void thread_set_nice(int nice UNUSED)
   {
     e = list_begin(&ready_list);
     struct thread *max_priority_thread = list_entry(e, struct thread, readyelem);
-    if (max_priority_thread->priority >= thread_current()->priority)
+    if (max_priority_thread->priority >= thread_current()->priority && !intr_context)
     {
       thread_yield();
     }

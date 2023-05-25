@@ -133,7 +133,7 @@ void sema_up(struct semaphore *sema)
 	sema->value++;
 
 	/*send the current thread to ready queue if the unblocked thread has higher priority and reschedule*/
-	if (priority > thread_current()->priority)
+	if (priority > thread_current()->priority && !intr_context)
 	{
 
 		thread_yield();
@@ -407,7 +407,7 @@ void cond_signal(struct condition *cond, struct lock *lock UNUSED)
 		priority = unblocked_thread->priority;
 	}
 
-	if (priority > thread_current()->priority)
+	if (priority > thread_current()->priority && !intr_context)
 	{
 		thread_yield();
 	}
