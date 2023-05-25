@@ -8,11 +8,9 @@
 
 >> Fill in the names and email addresses of your group members.
 
-Mahmoud Attia <es-mahmoudattia2025@alexu.edu.eg>
-Mohamed Hassan <es-MohamedH.Sadek2025@alexu.edu.eg>
-Mahmoud Ali <es-MahmoudAli2025@alexu.edu.eg>
-Adel Mahmoud <es-AdelMahmoud2025@alexu.edu.eg>
-Abdelrahman Elsayed <es-abdulrahmanelsayed2025@alexu.edu.eg>
+FirstName LastName <email@domain.example>
+FirstName LastName <email@domain.example>
+FirstName LastName <email@domain.example>
 
 ---- PRELIMINARIES ----
 
@@ -31,17 +29,7 @@ Abdelrahman Elsayed <es-abdulrahmanelsayed2025@alexu.edu.eg>
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-Ans:       <<thread.h>>
-1) struct thread {
-     struct thread* parent; ---> pointer to the parent of the thread to be helpful in communication link between parent and child.
-     struct list child_list; ---> list of the children processes.
-     struct list_elem child_elem; ---> struct for the list of the process's children.
-     struct file* execFile; ---> pointer to the executable file the thread executes. it is set in load function by the thread.
-     int childState; ---> to set the child's status (i.e. its exit code) to the parent when the parent is waiting on it.
-     bool createdSucc; ---> some mean of communication between parent and child as this will help us detecting whether the child creation status (succeeded or failed).
-     struct semaphore waitChildExecution; ---> semaphore used to make the parent wait on the child to finish execution.
-     struct semaphore waitChildLoading; ---> semaphore used to make the parent be blocked till the child process is loaded and sets its status to the parent.
-   };
+
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
@@ -64,29 +52,54 @@ Ans:       <<thread.h>>
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-Ans:       <<thread.h>>
- 1) struct thread
-    {
-        struct list file_list; ---> list of the open files, this manage us to get the pointer to the file opened by the current thread.
-        int fileDirectory; ---> it is used to get the index of the opened file in the file directory table.
-    }
- 2) struct opened_file{
-      int fileDescriptor; ---> file descriptor of the file held by the struct.//passed to the system calls
-      struct file* ptr; ---> pointer to the file.//used to communicate with file system
-      //fileDescriptor and ptr are used in conversion from "file descriptor to pointer function"
-      struct list_elem elem; ---> list to put the struct on.
-    };
-         <<syscall.c>>
- 3) static struct lock lock; --> the only global lock, that we use to avoid race condition of files.
- 
+
+---(1) Added in syscall.c
+
+       the only global lock, that we use to avoid race condition of files
+      
+         static struct lock lock;
+
+       A struct for the file descriptor entry
+      
+          struct fd_entry
+          {
+             int fd;  -->the index of entry in the table
+             struct file *file;  --> file pointer 
+             struct list_elem elem; --> list to put the struct on (resources of the file).
+          };
+
+---(2) Added two new element in struct thread in thread.h to use it in the  functions for files
+      --> struct list file_list; --> list of files open by thread
+      --> int fileDirectory; --> counter of the file directory
+      
+---(3) Added struct opened_file in thread.h
+      struct opened_file{ -->struct to open the file by the current thread
+   	int fileDescriptor;
+   	struct file* ptr; -->file pointer
+   	struct list_elem elem; -->list resources of the file
+      };
+
+
 >> B2: Describe how file descriptors are associated with open files.
+
+---> in the function open which called when open the file it created 
+open from struct opened_file and allocate page for it after that 
+increment fileDirectory for the current thread and assign it in the fileDescriptor of open and push the open in the (list) of opened file.
+  
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
+
+---> it is unique just just within a single process.
 
 ---- ALGORITHMS ----
 
 >> B3: Describe your code for reading and writing user data from the
 >> kernel.
+
+---> checked in the first if fd is 0 then read from keyboard or 1 then print 
+in monitor else get the file with fd if it is -1 then no file and return -1
+else then the file is found and write or read from it.
+
 
 >> B4: Suppose a system call causes a full page (4,096 bytes) of data
 >> to be copied from user space into the kernel.  What is the least
@@ -95,8 +108,19 @@ Ans:       <<thread.h>>
 >> for a system call that only copies 2 bytes of data?  Is there room
 >> for improvement in these numbers, and how much?
 
+---> At least 1 and at most 2.
+
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+
+
+---> when the parent call the wait function it pass the pid(thread id) 
+first check if there is child with this pid or not 
+if true the parent remove the child and wake up and the parent will block 
+it self until the child finish the execution and before the child terminate
+it will set its status to parent and unblock the parent then will terminate.
+
+if fale will return -1
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -112,6 +136,16 @@ Ans:       <<thread.h>>
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+--->At any function which use pointer from the stack it is checked first 
+if it is not NULL and valid pointer to use it .
+for example, in the syscall_handler check the pointer the esp if it valid 
+before use it.
+
+in the code we seperate the code for handling code in seperate function 
+for example, the function validate_void_ptr(const void *pt) to validate that the address provided by the user is not null and inside my user space
+ and it's mapped in the page table (have a physical address)
+
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
@@ -119,6 +153,10 @@ Ans:       <<thread.h>>
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
+---> by checking the flag (createdSucc) .this flag is held by the parent
+process and when the load is terminated, the child process will update
+that flag.
+ 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
 >> calls wait(C) before C exits?  After C exits?  How do you ensure
@@ -126,16 +164,57 @@ Ans:       <<thread.h>>
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
+---> before C exits : will make sema up for wait child loading 
+(c->​ wait child loading )
+and make sema_down(p->​ waitChildExecution). ​ So the child process will
+start to execute and when it exits, it makes sema_up
+(p->​waitChildExecution).
+
+---> After C exits : This case won’t happen because when 
+ the parent spawns the child, the child will be blocked until the parent
+  is waiting for that child or the parent is terminated.
+
+---> How do you ensure that all resources are freed in each case?
+  When the parent process is terminated, it will iterate on
+child_list to wake up all blocked children and iterate on
+opened_file_list to close all opened files and it will free the memory of
+the struct holding the file by (filesys_remove(file)).
+
+How about when P terminates without waiting, before C exits?
+--->When the parent terminates, it will wake up all its children
+and the children will execute and terminates also without any problem.
+
+How about when P terminates without waiting, After C exits?
+---> This case won’t happen because when 
+the parent spawns the child, the child will be blocked until the parent
+is waiting for that child or the parent is terminated.
+
+Are there any special cases?
+--> No,there aren't any special cases.
+ 
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
 
+---> No need for implement function for accessing to user memory , we use functions implemented already in paintos to access in the file pagedir.c
+
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
+---> Adventages,it is characterized by being simple, easy and clear and 
+it tests the file that returns from the list when using the pointer, that it 
+already exists and is not null, and it provides a suitable interface for 
+dealing with filesing with.
+
+Disadventages,It is based on the assumption that there is one process will 
+deal with one file for example, if there is a process read or write from 
+file no other files will be read or written.
+
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+
+---> No changes occurred.
 
                SURVEY QUESTIONS
                ================
