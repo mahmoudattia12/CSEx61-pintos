@@ -26,7 +26,7 @@ struct fd_entry
 };
 
 static void syscall_handler(struct intr_frame *);
-void validate_void_ptr(const void *ptr);
+void check_valid_address(const void *ptr);
 void halt(void);
 void exit(int status);
 bool create(char *file, unsigned initial_size);
@@ -52,7 +52,7 @@ void syscall_init(void)
 
 // function to validate that the address provided by the user is not null and inside my user space
 // and it's mapped in the page table (have a physical address)
-void validate_void_ptr(const void *pt)
+void check_valid_address(const void *pt)
 {
   if (pt == NULL || !is_user_vaddr(pt) || pagedir_get_page(thread_current()->pagedir, pt) == NULL)
   {
@@ -64,7 +64,7 @@ void validate_void_ptr(const void *pt)
 static void
 syscall_handler(struct intr_frame *f)
 {
-  validate_void_ptr(f->esp);
+  check_valid_address(f->esp);
   void *esp = f->esp;
   int fd;
   void *buffer;
@@ -77,13 +77,13 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_EXIT:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     int status = *((int *)esp + 1);
     exit(status);
     break;
 
   case SYS_EXEC:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     char *cmd_line = (char *)(*((int *)esp + 1));
     if (cmd_line == NULL)
       exit(-1);
@@ -93,14 +93,14 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_WAIT:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     int pid = (*((int *)esp + 1));
     f->eax = wait(pid);
     break;
 
   case SYS_CREATE:
-    validate_void_ptr(esp + 4);
-    validate_void_ptr(esp + 8);
+    check_valid_address(esp + 4);
+    check_valid_address(esp + 8);
     file = (char *)(*((uint32_t *)esp + 1));
     unsigned init_size = *((unsigned *)esp + 2);
     if (file == NULL)
@@ -109,7 +109,7 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_REMOVE:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     file = (char *)(*((uint32_t *)esp + 1));
     if (file == NULL)
       exit(-1);
@@ -117,7 +117,7 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_OPEN:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     char *file_name = (char *)(*((uint32_t *)esp + 1));
     if (file_name == NULL)
       exit(-1);
@@ -125,29 +125,29 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_FILESIZE:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     fd = *((uint32_t *)esp + 1);
     f->eax = fileSize(fd);
     break;
 
   case SYS_READ:
-    validate_void_ptr(esp + 4);
-    validate_void_ptr(esp + 8);
-    validate_void_ptr(esp + 12);
+    check_valid_address(esp + 4);
+    check_valid_address(esp + 8);
+    check_valid_address(esp + 12);
 
     fd = *((int *)f->esp + 1);
     buffer = (void *)(*((int *)f->esp + 2));
     size = *((int *)f->esp + 3);
 
-    validate_void_ptr(buffer + size);
+    check_valid_address(buffer + size);
 
     f->eax = read(fd, buffer, size);
     break;
 
   case SYS_WRITE:
-    validate_void_ptr(esp + 4);
-    validate_void_ptr(esp + 8);
-    validate_void_ptr(esp + 12);
+    check_valid_address(esp + 4);
+    check_valid_address(esp + 8);
+    check_valid_address(esp + 12);
     fd = *((uint32_t *)esp + 1);
     buffer = (void *)(*((uint32_t *)esp + 2));
     size = *((unsigned *)esp + 3);
@@ -158,21 +158,21 @@ syscall_handler(struct intr_frame *f)
     break;
 
   case SYS_SEEK:
-    validate_void_ptr(esp + 4);
-    validate_void_ptr(esp + 8);
+    check_valid_address(esp + 4);
+    check_valid_address(esp + 8);
     fd = *((uint32_t *)esp + 1);
     int pos = (*((unsigned *)esp + 2));
     seek(fd, pos);
     break;
 
   case SYS_TELL:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     fd = *((uint32_t *)esp + 1);
     f->eax = tell(fd);
     break;
 
   case SYS_CLOSE:
-    validate_void_ptr(esp + 4);
+    check_valid_address(esp + 4);
     fd = *((uint32_t *)esp + 1);
     close(fd);
     break;
@@ -222,26 +222,28 @@ int wait(int pid)
 // return boolean indicating whether the creation process is a success or not
 bool create(char *file, unsigned initial_size)
 {
-  bool ret;
+  bool success;
 	lock_acquire(&lock);
-	ret = filesys_create(file, initial_size);
+	success = filesys_create(file, initial_size);
 	lock_release(&lock);
-  return ret;
+  return success;
 }
 
 
 // remove the file that's named (char *file) and return if success or not
 bool remove(char *file)
 {
-  bool ret;
+  bool success;
   lock_acquire(&lock);
-  ret = filesys_remove(file);
+  success = filesys_remove(file);
   lock_release(&lock);
-  return ret;
+  return success;
 }
 
+
 int open(char *file_name)
-{ // allocate page in for file in memory
+{ 
+  // allocate page in for file in memory
   struct opened_file *open = palloc_get_page(0);
   if (open == NULL)
   {
@@ -251,7 +253,7 @@ int open(char *file_name)
 
   // open the file by filesys_open() and return a pointer to that file
   lock_acquire(&lock);
-  open->ptr = filesys_open(file_name);
+  open->ptr = filesys_open(file_name); //identify the file as a struct of file type
   lock_release(&lock);
 
   // if the pointer is null for any case such as no file name as such or any memory fail
@@ -267,6 +269,8 @@ int open(char *file_name)
   return open->fileDescriptor;
 }
 
+
+
 int fileSize(int fileDescriptor)
 {
   struct file *file = get_file_by_fd(fileDescriptor)->ptr;
@@ -277,12 +281,12 @@ int fileSize(int fileDescriptor)
     return -1;
   }
 
-  int returnValue;
+  int fileLength;
   lock_acquire(&lock);
   // return the size of the opened file in bytes, and do not forget the lock
-  returnValue = file_length(file);
+  fileLength = file_length(file);
   lock_release(&lock);
-  return returnValue;
+  return fileLength;
 }
 
 struct opened_file *get_file_by_fd(int fd)

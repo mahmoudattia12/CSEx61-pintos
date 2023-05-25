@@ -184,7 +184,7 @@ for example, in the syscall_handler check the pointer the esp if it valid
 before use it.
 
 in the code we seperate the code for handling code in seperate function 
-for example, the function validate_void_ptr(const void *pt) to validate that the address provided by the user is not null and inside my user space
+for example, the function check_valid_address(const void *pt) to validate that the address provided by the user is not null and inside my user space
  and it's mapped in the page table (have a physical address)
 
 

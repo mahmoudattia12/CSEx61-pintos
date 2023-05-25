@@ -149,7 +149,7 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
    //the implemented page
-  validate_void_ptr(fault_addr);
+  check_valid_address(fault_addr);
   if(!not_present || !write || !user)
     exit(-1);
 
