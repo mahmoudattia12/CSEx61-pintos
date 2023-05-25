@@ -8,9 +8,11 @@
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
+Mahmoud Attia <es-mahmoudattia2025@alexu.edu.eg>
+Mohamed Hassan <es-MohamedH.Sadek2025@alexu.edu.eg>
+Mahmoud Ali <es-MahmoudAli2025@alexu.edu.eg>
+Adel Mahmoud <es-AdelMahmoud2025@alexu.edu.eg>
+Abdelrahman Elsayed <es-abdulrahmanelsayed2025@alexu.edu.eg>
 
 ---- PRELIMINARIES ----
 
@@ -29,7 +31,17 @@ FirstName LastName <email@domain.example>
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-
+        <<thread.h>>
+1) struct thread {
+     struct thread* parent; ---> pointer to the parent of the thread to be helpful in communication link between parent and child.
+     struct list child_list; ---> list of the children processes.
+     struct list_elem child_elem; ---> struct for the list of the process's children.
+     struct file* execFile; ---> pointer to the executable file the thread executes. it is set in load function by the thread.
+     int childState; ---> to set the child's status (i.e. its exit code) to the parent when the parent is waiting on it.
+     bool createdSucc; ---> some mean of communication between parent and child as this will help us detecting whether the child creation status (succeeded or failed).
+     struct semaphore waitChildExecution; ---> semaphore used to make the parent wait on the child to finish execution.
+     struct semaphore waitChildLoading; ---> semaphore used to make the parent be blocked till the child process is loaded and sets its status to the parent.
+   };
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
@@ -39,11 +51,18 @@ FirstName LastName <email@domain.example>
 ---- RATIONALE ----
 
 >> A3: Why does Pintos implement strtok_r() but not strtok()?
-
+  Ans: strtok_r() is similar to strtok() but it is safer than it.
+  -The reason for that is that strok() uses a global variable to keep track of the string position. So using strtok() in multiple strings 
+  simultaneously may lead to race conditions.
+ 
 >> A4: In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
-
+  Ans: 
+    1) letting the shell to do separation of desired executable command and arguments, will reduce a lot of overhead occurs as it validates first that the command
+    and arguments are valid or not before passing to the kernel, and the kernel doesn't care about this.
+    2) Making the shell separate the command from arguments will make the validation and separation done in the user mode rather than kernel mode
+    which makes the code is abstracted and organized.
                  SYSTEM CALLS
                  ============
 
