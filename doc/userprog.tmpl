@@ -46,7 +46,30 @@ Abdelrahman Elsayed <es-abdulrahmanelsayed2025@alexu.edu.eg>
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
 >> you arrange for the elements of argv[] to be in the right order?
+
+- Once the setup_stack method in the load function of the process.c file returns true, we proceed to parse the file_name 
+and populate the stack accordingly.
+
+- When tokenizing the file_name using strtok_r(), each argument is sequentially pushed into the stack, starting from the left 
+(in the normal order as in this point order doesn’t matter as we will use a pointer to this value).
+
+- argv[i] contains the memory address of the argument within the stack. When pushing the argument i, we record the starting address 
+in the stack where this argument is stored, and store it in argv[i].
+
+- After pushing the argument, we ensure proper alignment if necessary, and then append null characters until its multiple of 4 if needed.
+
+- To handle pushing the addresses of the arguments from right to left, we leverage the argv array. 
+By iterating over the array in reverse order, we push each address onto the stack (right to left as required).
+
+- Additionally, we push a pointer to argv[0], which effectively becomes a pointer to the pointer of the first argument's address in the stack.
+
+- Finally, we push the number of arguments (args) onto the stack, followed by a NULL pointer serving as the fake return address.
+
 >> How do you avoid overflowing the stack page?
+
+In order to manage the stack efficiently, we have established a limit for the number of arguments (set to 25 in our implementation) 
+and push as long as the number of pushed arguments is lower than this limit. We found this limit is logical and it passed all tests 
+so we kept it however we may need to change it if another user or tests will need that.
 
 ---- RATIONALE ----
 
