@@ -424,7 +424,7 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   char *tokenn = file_name;
   char *nextt;
   int argc = 0;
-  int *argv = calloc(25, sizeof(int)); // 30 is the maximum number of arguments allowed
+  int *argv = calloc(25, sizeof(int)); 
 
   // push the addresses of each argument
   for (tokenn = strtok_r(file_name, " ", &nextt); tokenn != NULL; tokenn = strtok_r(NULL, " ", &nextt))
