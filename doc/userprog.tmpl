@@ -8,9 +8,11 @@
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
+Mahmoud Attia <es-mahmoudattia2025@alexu.edu.eg>
+Mohamed Hassan <es-MohamedH.Sadek2025@alexu.edu.eg>
+Mahmoud Ali <es-MahmoudAli2025@alexu.edu.eg>
+Adel Mahmoud <es-AdelMahmoud2025@alexu.edu.eg>
+Abdelrahman Elsayed <es-abdulrahmanelsayed2025@alexu.edu.eg>
 
 ---- PRELIMINARIES ----
 
@@ -29,7 +31,17 @@ FirstName LastName <email@domain.example>
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-
+Ans:       <<thread.h>>
+1) struct thread {
+     struct thread* parent; ---> pointer to the parent of the thread to be helpful in communication link between parent and child.
+     struct list child_list; ---> list of the children processes.
+     struct list_elem child_elem; ---> struct for the list of the process's children.
+     struct file* execFile; ---> pointer to the executable file the thread executes. it is set in load function by the thread.
+     int childState; ---> to set the child's status (i.e. its exit code) to the parent when the parent is waiting on it.
+     bool createdSucc; ---> some mean of communication between parent and child as this will help us detecting whether the child creation status (succeeded or failed).
+     struct semaphore waitChildExecution; ---> semaphore used to make the parent wait on the child to finish execution.
+     struct semaphore waitChildLoading; ---> semaphore used to make the parent be blocked till the child process is loaded and sets its status to the parent.
+   };
 ---- ALGORITHMS ----
 
 >> A2: Briefly describe how you implemented argument parsing.  How do
@@ -52,7 +64,21 @@ FirstName LastName <email@domain.example>
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
-
+Ans:       <<thread.h>>
+ 1) struct thread
+    {
+        struct list file_list; ---> list of the open files, this manage us to get the pointer to the file opened by the current thread.
+        int fileDirectory; ---> it is used to get the index of the opened file in the file directory table.
+    }
+ 2) struct opened_file{
+      int fileDescriptor; ---> file descriptor of the file held by the struct.//passed to the system calls
+      struct file* ptr; ---> pointer to the file.//used to communicate with file system
+      //fileDescriptor and ptr are used in conversion from "file descriptor to pointer function"
+      struct list_elem elem; ---> list to put the struct on.
+    };
+         <<syscall.c>>
+ 3) static struct lock lock; --> the only global lock, that we use to avoid race condition of files.
+ 
 >> B2: Describe how file descriptors are associated with open files.
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
