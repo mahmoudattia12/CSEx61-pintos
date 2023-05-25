@@ -344,7 +344,6 @@ bool load(const char *file_name, void (**eip)(void), void **esp)
   if (file == NULL)
   {
     printf("load: %s: open failed\n", file_name);
-    // success = 0;
     goto done;
   }
 
