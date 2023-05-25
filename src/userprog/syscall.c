@@ -62,7 +62,7 @@ void validate_void_ptr(const void *pt)
 
 
 static void
-syscall_handler(struct intr_frame *f UNUSED)
+syscall_handler(struct intr_frame *f)
 {
   validate_void_ptr(f->esp);
   void *esp = f->esp;
@@ -197,7 +197,6 @@ void exit(int status)
   printf("%s: exit(%d)\n", thread_current()->name, status);
   if (cur)
     cur->childState = status;
-    cur->childState = status;
   thread_exit();
 }
 
@@ -227,10 +226,6 @@ bool create(char *file, unsigned initial_size)
 	lock_acquire(&lock);
 	ret = filesys_create(file, initial_size);
 	lock_release(&lock);
-	return true;
-  lock_acquire(&lock);
-  ret = filesys_create(file, initial_size);
-  lock_release(&lock);
   return ret;
 }
 
@@ -418,5 +413,3 @@ int read(int fd, void *buffer, int length)
     return result;
   }
 }
-
-
